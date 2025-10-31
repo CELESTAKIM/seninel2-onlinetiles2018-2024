@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CELESTAKIM GEE Map Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  html, body { height: 100%; margin: 0; }
+  #map { height: 100%; width: 100%; }
+
+  .info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10000;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    line-height: 1.4em;
+    width: 270px;
+  }
+  .info b { color: #0078A8; }
+
+  /* Buttons for navigation */
+  .nav-buttons {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .nav-buttons button {
+    background-color: #0078A8;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: "Segoe UI", Arial, sans-serif;
+    transition: 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  }
+  .nav-buttons button:hover {
+    background-color: #005e7d;
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- Navigation Buttons -->
+<div class="nav-buttons">
+  <button onclick="openPage('index1.html')">Open Index 1</button>
+  <button onclick="openPage('index2.html')">Open Index 2</button>
+</div>
+
+<!-- Info Box -->
+<div class="info" id="infoBox">
+  <b>Provider:</b> Earth Engine / Leaflet <br>
+  <b>Author:</b> CELESTAKIM018@GMAIL.COM <br>
+  <b>Zoom Level:</b> 7 <br>
+  <b>Terms:</b> Educational & Research Use Only
+</div>
+
+<script>
+// ---------- Navigation Functions ----------
+function openPage(page) {
+  window.open(page, "_blank");
+}
+
+// ---------- Base Maps ----------
+const basemaps = {
+  "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+  }),
+  "Google Satellite": L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    attribution: '&copy; Google'
+  }),
+  "Google Terrain": L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+    attribution: '&copy; Google'
+  }),
+  "ESRI World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; Esri, Maxar'
+  }),
+  "Carto Light": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO'
+  }),
+  "Stamen Toner": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
+    attribution: '&copy; Stamen Design'
+  }),
+  "Stamen Watercolor": L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg', {
+    attribution: '&copy; Stamen Design'
+  }),
+  "Dark Matter": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO'
+  })
+};
+
+// ---------- GEE Layers ----------
+const geeLayers = {
+  "RA 2018": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/440c858b3a3d850392cd0e740ebdc6f7-1bc4341fadc542b73985a7fd119f6258/tiles/{z}/{x}/{y}', { attribution: 'GEE 2018' }),
+  "WA 2019": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ca19dbc7bc8223d612a87749390cf5be-7c34151e5a483b51cd6ab534a8cc6079/tiles/{z}/{x}/{y}', { attribution: 'GEE 2019' }),
+  "WA 2020": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/f7794c74fa455cac036654c18f6c4c4a-477c106fc710caeeef9568f1bb88bf11/tiles/{z}/{x}/{y}', { attribution: 'GEE 2020' }),
+  "WA 2021": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/46d5711515c98a4f6edde3044d6a7363-d2008eaf2fa0ce025d38fc39b93bb5d9/tiles/{z}/{x}/{y}', { attribution: 'GEE 2021' }),
+  "WA 2022": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/650b0a48832db35dd7b89b02cff3ba99-ae7354a2bfd06b1ce6fd9519b02b0595/tiles/{z}/{x}/{y}', { attribution: 'GEE 2022' }),
+  "RA 2023": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/0835fddf470281c12e17c36a63d2a1fe-d19a203c29b54d22538b28b989908cdb/tiles/{z}/{x}/{y}', { attribution: 'GEE 2023' }),
+  "WA 2024": L.tileLayer('https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ac7f200d7e71e5b8289da46b401b8483-b9f053ffe21d66c78e9323f003cde3d0/tiles/{z}/{x}/{y}', { attribution: 'GEE 2024' })
+};
+
+// ---------- Initialize Map ----------
+const map = L.map('map', {
+  center: [0.1, 37.9],
+  zoom: 7,
+  layers: [basemaps["Google Satellite"], geeLayers["RA 2018"]]
+});
+
+// ---------- Layer Control ----------
+L.control.layers(basemaps, geeLayers, { collapsed: false }).addTo(map);
+
+// ---------- Zoom Level Update ----------
+map.on('zoomend', function() {
+  const z = map.getZoom();
+  document.getElementById('infoBox').innerHTML = `
+    <b>Provider:</b> Earth Engine / Leaflet <br>
+    <b>Author:</b> CELESTAKIM018@GMAIL.COM <br>
+    <b>Zoom Level:</b> ${z} <br>
+    <b>Terms:</b> Educational & Research Use Only
+  `;
+});
+</script>
+</body>
+</html>
