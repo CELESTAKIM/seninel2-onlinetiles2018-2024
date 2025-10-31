@@ -1,0 +1,167 @@
+<!DOCTYPE html> 
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Kenya Sentinel-2 Basemap (2018-2024)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    html,body,#map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 12px;
+      border-radius: 10px;
+      font-family: system-ui, sans-serif;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
+      width: 340px;
+    }
+    #yearLabel {
+      font-weight: 700;
+      font-size: 16px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    #urlBox {
+      font-size: 12px;
+      margin-top: 6px;
+      word-break: break-all;
+      background: #f7f7f7;
+      padding: 6px;
+      border-radius: 6px;
+      max-height: 60px;
+      overflow-y: auto;
+    }
+    #controls input[type="range"] {
+      width: 100%;
+    }
+    #mapButtons {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    #mapButtons button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #0078d7;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #mapButtons button:hover {
+      background: #005fa3;
+    }
+    #zoomBox {
+      position: absolute;
+      bottom: 70px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    footer {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: #f1f1f1;
+      color: #222;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      text-align: center;
+      padding: 8px 10px;
+      border-top: 1px solid #ccc;
+      z-index: 999;
+    }
+    footer a { color: #0066cc; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="controls">
+  <span id="yearLabel">Year: <span id="yearVal">2024</span></span>
+  <input id="yearSlider" type="range" min="2018" max="2024" step="1" value="2024"/>
+  <div id="urlBox"></div>
+
+  <div id="mapButtons">
+    <button onclick="window.open('index.html', '_blank')">Open Index</button>
+    <button onclick="window.open('index1.html', '_blank')">Open Index1</button>
+  </div>
+</div>
+
+<div id="zoomBox">Zoom: <span id="zoomVal">6</span></div>
+
+<footer>
+  Sentinel-2 Imagery (2018-2024) • Processed via <b>Google Earth Engine</b> |
+  Developed by <b>CELESTAKIM018@GMAIL.COM</b><br>
+  Data © <a href="https://scihub.copernicus.eu" target="_blank">Copernicus ESA</a> &nbsp;|&nbsp;
+  Map © <a href="https://earthengine.google.com" target="_blank">Google Earth Engine</a> &nbsp;|&nbsp;
+  Terms: For educational and non-commercial use only.
+</footer>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  const yearTiles = {
+    2018: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/440c858b3a3d850392cd0e740ebdc6f7-1bc4341fadc542b73985a7fd119f6258/tiles/{z}/{x}/{y}",
+    2019: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ca19dbc7bc8223d612a87749390cf5be-7c34151e5a483b51cd6ab534a8cc6079/tiles/{z}/{x}/{y}",
+    2020: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/f7794c74fa455cac036654c18f6c4c4a-477c106fc710caeeef9568f1bb88bf11/tiles/{z}/{x}/{y}",
+    2021: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/46d5711515c98a4f6edde3044d6a7363-d2008eaf2fa0ce025d38fc39b93bb5d9/tiles/{z}/{x}/{y}",
+    2022: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/650b0a48832db35dd7b89b02cff3ba99-ae7354a2bfd06b1ce6fd9519b02b0595/tiles/{z}/{x}/{y}",
+    2023: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/0835fddf470281c12e17c36a63d2a1fe-d19a203c29b54d22538b28b989908cdb/tiles/{z}/{x}/{y}",
+    2024: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ac7f200d7e71e5b8289da46b401b8483-b9f053ffe21d66c78e9323f003cde3d0/tiles/{z}/{x}/{y}"
+  };
+
+  const map = L.map('map', { zoomControl: true }).setView([0.2, 37.9], 6);
+
+  const tileLayers = {};
+  Object.keys(yearTiles).forEach(y => {
+    tileLayers[y] = L.tileLayer(yearTiles[y], { maxZoom: 13, attribution: 'Sentinel-2 © GEE' });
+  });
+
+  let currentYear = 2024;
+  tileLayers[currentYear].addTo(map);
+
+  const slider = document.getElementById('yearSlider');
+  const yearVal = document.getElementById('yearVal');
+  const urlBox = document.getElementById('urlBox');
+  const zoomVal = document.getElementById('zoomVal');
+
+  function setYear(y){
+    y = parseInt(y);
+    if (y === currentYear) return;
+    map.removeLayer(tileLayers[currentYear]);
+    tileLayers[y].addTo(map);
+    currentYear = y;
+    yearVal.textContent = y;
+    slider.value = y;
+    urlBox.textContent = yearTiles[y];
+  }
+
+  slider.addEventListener('input', e => setYear(e.target.value));
+  urlBox.textContent = yearTiles[currentYear];
+
+  map.on('zoomend', () => {
+    zoomVal.textContent = map.getZoom();
+  });
+</script>
+
+</body>
+</html>
