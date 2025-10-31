@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kenya Sentinel-2 (2018-2024) — Temporal Dragger</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    html,body,#map { height: 100%; margin: 0; }
+    #controls {
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      width: 360px;
+    }
+    #yearLabel { font-weight: 700; font-size: 16px; margin-bottom: 6px; display:block; }
+    #urlBox { font-size: 12px; margin-top:8px; word-break: break-all; background:#f6f6f6; padding:6px; border-radius:4px; max-height:64px; overflow:auto; }
+    #controls .row { display:flex; gap:6px; align-items:center; }
+    #controls button { padding:6px 8px; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white; }
+    #controls input[type="range"] { width:100%; }
+    .attribution {
+      position:absolute; right:10px; bottom:6px; z-index:1000;
+      background: rgba(255,255,255,0.9); padding:6px 8px; border-radius:4px; font-size:12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="controls">
+    <span id="yearLabel">Year: <span id="yearVal">2024</span></span>
+    <div class="row">
+      <button id="playBtn">Play ▶</button>
+      <button id="prevBtn">◀ Prev</button>
+      <button id="nextBtn">Next ▶</button>
+      <div style="flex:1"></div>
+      <button id="copyBtn">Copy URL</button>
+    </div>
+    <div style="margin-top:8px;">
+      <input id="yearSlider" type="range" min="2018" max="2024" step="1" value="2024"/>
+    </div>
+    <div id="urlBox" title="Active tile URL (copyable)"></div>
+  </div>
+
+  <div class="attribution">Sentinel-2 (2018–2024) • Tiles from Google Earth Engine</div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // --- year => tile URL mapping (cleaned, single-line URLs) ---
+    const yearTiles = {
+      2018: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/440c858b3a3d850392cd0e740ebdc6f7-1bc4341fadc542b73985a7fd119f6258/tiles/{z}/{x}/{y}",
+      2019: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ca19dbc7bc8223d612a87749390cf5be-7c34151e5a483b51cd6ab534a8cc6079/tiles/{z}/{x}/{y}",
+      2020: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/f7794c74fa455cac036654c18f6c4c4a-477c106fc710caeeef9568f1bb88bf11/tiles/{z}/{x}/{y}",
+      2021: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/46d5711515c98a4f6edde3044d6a7363-d2008eaf2fa0ce025d38fc39b93bb5d9/tiles/{z}/{x}/{y}",
+      2022: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/650b0a48832db35dd7b89b02cff3ba99-ae7354a2bfd06b1ce6fd9519b02b0595/tiles/{z}/{x}/{y}",
+      2023: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/0835fddf470281c12e17c36a63d2a1fe-d19a203c29b54d22538b28b989908cdb/tiles/{z}/{x}/{y}",
+      2024: "https://earthengine.googleapis.com/v1/projects/ee-celestakim019/maps/ac7f200d7e71e5b8289da46b401b8483-b9f053ffe21d66c78e9323f003cde3d0/tiles/{z}/{x}/{y}"
+    };
+
+    // --- initialize map ---
+    const map = L.map('map').setView([0.1, 37.9], 6);
+
+    // optional: add OSM beneath for context (you can remove if you prefer only imagery)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: 'OpenStreetMap'
+    }).addTo(map);
+
+    // create tile layers and keep them in an object
+    const tileLayers = {};
+    Object.keys(yearTiles).forEach(y => {
+      tileLayers[y] = L.tileLayer(yearTiles[y], { maxZoom: 13, opacity: 1.0, attribution: 'Sentinel-2 © GEE' });
+    });
+
+    // start with 2024 visible
+    let currentYear = 2024;
+    tileLayers[currentYear].addTo(map);
+
+    // controls
+    const yearSlider = document.getElementById('yearSlider');
+    const yearVal = document.getElementById('yearVal');
+    const urlBox = document.getElementById('urlBox');
+    const playBtn = document.getElementById('playBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function setYear(y) {
+      y = parseInt(y, 10);
+      if (y === currentYear) return;
+      // remove old
+      if (tileLayers[currentYear]) map.removeLayer(tileLayers[currentYear]);
+      // add new
+      tileLayers[y].addTo(map);
+      currentYear = y;
+      yearVal.textContent = y;
+      yearSlider.value = y;
+      urlBox.textContent = yearTiles[y];
+    }
+
+    // initialize URL box and label
+    yearVal.textContent = currentYear;
+    urlBox.textContent = yearTiles[currentYear];
+
+    // slider event
+    yearSlider.addEventListener('input', function(e){
+      const y = Number(e.target.value);
+      setYear(y);
+    });
+
+    // prev / next
+    prevBtn.addEventListener('click', function(){
+      const y = Math.max(2018, currentYear - 1);
+      setYear(y);
+    });
+    nextBtn.addEventListener('click', function(){
+      const y = Math.min(2024, currentYear + 1);
+      setYear(y);
+    });
+
+    // copy URL
+    copyBtn.addEventListener('click', async function(){
+      try {
+        await navigator.clipboard.writeText(yearTiles[currentYear]);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(()=> copyBtn.textContent = 'Copy URL', 1200);
+      } catch (err) {
+        alert('Copy failed — select and copy from the box manually.');
+      }
+    });
+
+    // play/pause animation
+    let playing = false;
+    let playInterval = null;
+    playBtn.addEventListener('click', function(){
+      if (!playing) {
+        playing = true;
+        playBtn.textContent = 'Pause ⏸';
+        playInterval = setInterval(function(){
+          let next = currentYear + 1;
+          if (next > 2024) next = 2018;
+          setYear(next);
+        }, 1200); // change year every 1.2s
+      } else {
+        playing = false;
+        playBtn.textContent = 'Play ▶';
+        clearInterval(playInterval);
+      }
+    });
+
+    // ensure tile layers respond quickly: preload neighbor tiles (simple approach)
+    map.on('moveend zoomend', function(){
+      // Optionally refresh current tile layer to ensure tile requests occur
+      // tileLayers[currentYear].redraw();
+    });
+
+    // handle window resize to keep controls visible
+    window.addEventListener('resize', function(){
+      // keep UI responsive (no special action needed)
+    });
+  </script>
+</body>
+</html>
